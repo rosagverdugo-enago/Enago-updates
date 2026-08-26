@@ -96,16 +96,23 @@ def log_in():
                 "to check for a lockout message, and consider spacing out retries."
             )
 
-        if "wrong login" in page_text or "invalid" in page_text or "incorrect" in page_text:
-            raise RuntimeError(
-                "Login failed: the site reported invalid credentials. "
-                "Double-check the ENAGO_EMAIL / ENAGO_PASSWORD secrets for typos "
-                "or accidental extra spaces/newlines when they were pasted in."
-            )
+        # Try to surface the ACTUAL on-page error message (public text, no
+        # credentials involved) rather than guessing from generic keywords -
+        # this is far more reliable for figuring out what's really happening.
+        soup = BeautifulSoup(login_resp.text, "html.parser")
+        alert_box = soup.select_one(".alert, .alert-danger, [role='alert']")
+        alert_text = alert_box.get_text(strip=True) if alert_box else None
+
+        if alert_text:
+            print(f"[debug] site's own error message: {alert_text}")
+            raise RuntimeError(f"Login failed - the site displayed this message: '{alert_text}'")
+
+        print("[debug] no visible alert/error box found on the returned page.")
+        print(f"[debug] page title: {soup.title.get_text(strip=True) if soup.title else 'N/A'}")
         raise RuntimeError(
-            "Login appears to have failed, but no 'invalid credentials' or bot-block message "
-            "was detected on the returned page - this may be a CSRF/session issue "
-            "rather than wrong credentials. Share the next run's debug output."
+            "Login appears to have failed (redirected back to the login page), "
+            "but no error banner was found on it - likely a CSRF/session/cookie "
+            "issue rather than a rejected password. Share the new debug output."
         )
 
 
