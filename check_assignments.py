@@ -84,6 +84,18 @@ def log_in():
 
     if "login" in login_resp.url.lower():
         page_text = login_resp.text.lower()
+
+        bot_block_markers = ["captcha", "verify you are human", "unusual traffic", "too many attempts", "temporarily locked", "access denied", "cloudflare"]
+        found_marker = next((m for m in bot_block_markers if m in page_text), None)
+
+        if found_marker:
+            raise RuntimeError(
+                f"Login blocked by the site's bot/security protection (detected phrase: '{found_marker}'). "
+                "This usually means the site is flagging automated requests from GitHub's servers, "
+                "possibly due to earlier failed attempts. Try logging in manually in a browser first "
+                "to check for a lockout message, and consider spacing out retries."
+            )
+
         if "wrong login" in page_text or "invalid" in page_text or "incorrect" in page_text:
             raise RuntimeError(
                 "Login failed: the site reported invalid credentials. "
@@ -91,7 +103,7 @@ def log_in():
                 "or accidental extra spaces/newlines when they were pasted in."
             )
         raise RuntimeError(
-            "Login appears to have failed, but no 'invalid credentials' message "
+            "Login appears to have failed, but no 'invalid credentials' or bot-block message "
             "was detected on the returned page - this may be a CSRF/session issue "
             "rather than wrong credentials. Share the next run's debug output."
         )
@@ -205,4 +217,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
