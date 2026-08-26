@@ -59,8 +59,9 @@ def log_in():
     csrf_token = csrf_input["value"] if csrf_input else None
 
     payload = {
-        "login": EMAIL,       # change "login" if the field is named e.g. "email" or "username"
-        "password": PASSWORD,
+        "login": EMAIL,       # confirmed: matches the real form's field name
+        "password": PASSWORD,  # not yet confirmed - if login fails, check this field's actual name via Inspect
+        "redirect": "/experts",  # hidden field present on the real login form
     }
     if csrf_token:
         payload["csrf_token"] = csrf_token
