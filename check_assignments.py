@@ -37,9 +37,12 @@ ASSIGNMENTS_URL = "https://hub.enago.com/experts"  # update if assignments live 
 
 STATE_FILE = Path(__file__).parent / "seen_assignments.json"
 
-EMAIL = os.environ.get("ENAGO_EMAIL")
-PASSWORD = os.environ.get("ENAGO_PASSWORD")
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
+EMAIL = os.environ.get("ENAGO_EMAIL", "").strip()
+PASSWORD = os.environ.get("ENAGO_PASSWORD", "").strip()
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
+
+print(f"[debug] email length: {len(EMAIL)} (should match your actual email's character count)")
+print(f"[debug] password length: {len(PASSWORD)} (should match your actual password's character count)")
 
 session = requests.Session()
 session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; AssignmentWatcher/1.0)"})
