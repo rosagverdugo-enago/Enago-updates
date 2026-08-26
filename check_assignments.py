@@ -66,13 +66,35 @@ def log_in():
     if csrf_token:
         payload["csrf_token"] = csrf_token
 
-    login_resp = session.post(LOGIN_URL, data=payload, timeout=30)
+    login_resp = session.post(
+        LOGIN_URL,
+        data=payload,
+        headers={
+            "Referer": LOGIN_URL,
+            "Origin": "https://hub.enago.com",
+        },
+        timeout=30,
+    )
     login_resp.raise_for_status()
 
+    # Safe diagnostics - no credentials are printed, just status/URL info
+    # to help pinpoint the cause if login still fails.
+    print(f"[debug] login POST status: {login_resp.status_code}")
+    print(f"[debug] final URL after login: {login_resp.url}")
+
     if "login" in login_resp.url.lower():
-        # Redirected back to the login page usually means bad credentials
-        # or a login form field name that needs correcting above.
-        raise RuntimeError("Login appears to have failed - check credentials and form field names.")
+        page_text = login_resp.text.lower()
+        if "wrong login" in page_text or "invalid" in page_text or "incorrect" in page_text:
+            raise RuntimeError(
+                "Login failed: the site reported invalid credentials. "
+                "Double-check the ENAGO_EMAIL / ENAGO_PASSWORD secrets for typos "
+                "or accidental extra spaces/newlines when they were pasted in."
+            )
+        raise RuntimeError(
+            "Login appears to have failed, but no 'invalid credentials' message "
+            "was detected on the returned page - this may be a CSRF/session issue "
+            "rather than wrong credentials. Share the next run's debug output."
+        )
 
 
 NO_ASSIGNMENTS_TEXT = "No Assignment Found"  # literal text the dashboard shows when the New ASN tab is empty
